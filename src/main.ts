@@ -6,6 +6,7 @@ import { FileExtension } from './file-extension.enum';
 import { MarkUtils } from './mark.utils';
 import { Constants } from './constants';
 import { Mark } from './models/mark.model';
+import { CodeFile } from './models/code-file.model';
 
 // https://blacksmithgu.github.io/obsidian-dataview/resources/develop-against-dataview/
 
@@ -71,7 +72,7 @@ export default class MyPlugin extends Plugin {
 			})
 			.then(text => {
 				const diffFiles = Diff2Html.parse(text);
-				const markdown = diffFiles.reduce((markdown, diffFile) => {
+				const codeFiles = diffFiles.map(diffFile => {
 					const code = diffFile.blocks.reduce((code, block) => {
 						const lines = block.lines.reduce((lines, currentLine) => {
                             const shouldSkipLine = currentLine.type === LineType.DELETE;
@@ -86,34 +87,45 @@ export default class MyPlugin extends Plugin {
 						return code + lines;
 					}, '');
 
-					if (code.length === 0) {
-						return markdown;
-					}
-
-					const fileName = diffFile.newName;
+                    const fileName = diffFile.newName;
 					const rawFileExtension = fileName.split('.').pop() ?? '';
                     const fileExtension = FileExtension.find(rawFileExtension) ?? FileExtension.getDefaultFileExtension();
-					const markdownLanguage = FileExtension.getAssociatedMarkdownLanguage(fileExtension);
 
-					if (MarkUtils.isSummaryFileName(fileName)) {
-						console.log('readme', code);
-                        code.split('\n').forEach(rawMark => {
-                            if (rawMark.trim().length === 0) {
-                                return;
-                            }
-                            const mark = Mark.fromConfigurationMark(rawMark);
-                            console.log(rawMark, mark);
-                        });
-					}
+                    return new CodeFile({
+                        fileName: fileName,
+                        fileExtension: fileExtension,
+                        content: code
+                    });
+				})
 
-					if (!code.contains(currentLongTextMark)) {
-						return markdown;
-					}
+                const marks = codeFiles
+                    .find(codeFile => {
+                        return codeFile.isSummaryFile;
+                    })
+                    ?.content.split('\n').map(rawMark => {
+                        if (rawMark.trim().length === 0) {
+                        ;    return;
+                        }
+                        return Mark.fromConfigurationMark(rawMark);
+                    })
+                    .filter((mark): mark is Mark => {
+                        return mark != null;
+                    });
+                console.log(marks);
 
-					const markdownCodeBlock = this.generateMarkdownCodeBlock(markdownLanguage, code);
-					return `${markdown}\n\`${fileName}\`\n${markdownCodeBlock}`;
-				}, '');
+                
 
+                const markdown = codeFiles
+                    .filter(codeFile => {
+                        return codeFile.content.contains(currentLongTextMark);
+                    })
+                    .reduce((markdown, codeFile) => {
+                        const markdownCodeBlock = this.generateMarkdownCodeBlock(
+                            codeFile.associatedMarkdownLanguage,
+                            codeFile.content
+                        );
+                        return `${markdown}\n\`${codeFile.fileName}\`\n${markdownCodeBlock}`;
+                    }, '');
 				MarkdownRenderer.renderMarkdown(markdown, el, '', this);
 			});
 	}
