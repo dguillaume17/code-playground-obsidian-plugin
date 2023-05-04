@@ -1,12 +1,12 @@
 export namespace MarkUtils {
 
-    export function getMark(index: number): string {
-        return `MARK-${index}-`;
-    }
+    export function extractShortMarkIndex(shortMark: string): number | null {
+        const regexp = /(MARK-)([0-9]+)(-)/;
+        if (!shortMark.match(regexp)) {
+            return null;
+        }
 
-    export function hasMark(index: number, code: string): boolean {
-        const mark = getMark(index);
-        return code.contains(mark);
+        return Number(shortMark.replace(regexp, '$2'));
     }
 
     export function isSummaryFileName(fileName: string): boolean {

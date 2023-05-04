@@ -5,6 +5,7 @@ import { DataviewApi, getAPI } from "obsidian-dataview";
 import { FileExtension } from './file-extension.enum';
 import { MarkUtils } from './mark.utils';
 import { Constants } from './constants';
+import { Mark } from './models/mark.model';
 
 // https://blacksmithgu.github.io/obsidian-dataview/resources/develop-against-dataview/
 
@@ -34,14 +35,12 @@ export default class MyPlugin extends Plugin {
                     return;
                 }
 
-                console.log(ctx.sourcePath);
                 const currentPage = this._dataviewApi.page(ctx.sourcePath);
                 if (currentPage == null) {
                     return;
                 }
-                const mark = currentPage[Constants.MARK];
-                console.log(mark);
-				this.loadRepository(el);
+                const currentLongTextMark = currentPage[Constants.OBSIDIAN_LONG_MARK_FIELD];
+				this.loadRepository(el, currentLongTextMark);
 			}
 		);
 
@@ -65,9 +64,8 @@ export default class MyPlugin extends Plugin {
 
 	// Inner work
 
-	private async loadRepository(el: HTMLElement) {
-        const repositoryPath = 'https://github.com/dguillaume17/angular-playground/compare/base...master.diff';
-		await fetch(repositoryPath)
+	private async loadRepository(el: HTMLElement, currentLongTextMark: string) {
+		await fetch(Constants.GIT_DIFF_PATH)
 			.then(response => {
 				return response.text();
 			})
@@ -99,9 +97,16 @@ export default class MyPlugin extends Plugin {
 
 					if (MarkUtils.isSummaryFileName(fileName)) {
 						console.log('readme', code);
+                        code.split('\n').forEach(rawMark => {
+                            if (rawMark.trim().length === 0) {
+                                return;
+                            }
+                            const mark = Mark.fromConfigurationMark(rawMark);
+                            console.log(rawMark, mark);
+                        });
 					}
 
-					if (!MarkUtils.hasMark(1, code)) {
+					if (!code.contains(currentLongTextMark)) {
 						return markdown;
 					}
 
@@ -118,7 +123,7 @@ export default class MyPlugin extends Plugin {
             return;
         }
 
-        const pages = this._dataviewApi.pages().where(w => w[Constants.MARK] != null);
+        const pages = this._dataviewApi.pages().where(w => w[Constants.OBSIDIAN_LONG_MARK_FIELD] != null);
 
         console.log(this._dataviewApi.array(pages).array());
     }
