@@ -8,8 +8,4 @@ export namespace MarkUtils {
 
         return Number(shortMark.replace(regexp, '$2'));
     }
-
-    export function isSummaryFileName(fileName: string): boolean {
-        return fileName.toLowerCase() === 'readme.md';
-    }
 }
