@@ -1,5 +1,6 @@
 import { CodeLanguage } from "src/enums/code-language.enum";
 import { CodeFileFields } from "./code-file-fields.interface";
+import { FileUtils } from "src/utils/file.utils";
 
 export class CodeFile implements CodeFileFields {
 
@@ -9,9 +10,15 @@ export class CodeFile implements CodeFileFields {
 
     public fileName: string;
 
-    public language: CodeLanguage;
-
     // Calculated properties
+
+    public get fileExtension(): string {
+        return FileUtils.castFileNameAsFileExtension(this.fileName);
+    }
+
+    public get language(): CodeLanguage {
+        return CodeLanguage.fromFileExtension(this.fileExtension);
+    }
 
     public get markdownCodeBlockLanguage(): string {
         return CodeLanguage.getMarkdownCodeBlockLanguage(this.language);

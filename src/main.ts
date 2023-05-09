@@ -1,13 +1,14 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { DataViewPluginService } from './services/data-view-plugin.service';
 import { MarkdownGeneratorService } from './services/markdown-generator.service';
 import { CodeFile } from './models/code-file.model';
-import { CodeLanguage } from './enums/code-language.enum';
+import { BlockExtractorService } from './services/block-extractor.service';
 
 export default class CodePlaygroundPlugin extends Plugin {
 
     // Inner properties
 
+    private _blockExtractorService: BlockExtractorService; 
     private _dataViewPluginService: DataViewPluginService | undefined;
     private _markdownGeneratorService: MarkdownGeneratorService | undefined;
 	
@@ -15,7 +16,6 @@ export default class CodePlaygroundPlugin extends Plugin {
 
 	public async onload() {
         this.setupServices();
-        console.log('onload');
 
         this.setupCodePlaygroundProcessor();
 	}
@@ -27,28 +27,22 @@ export default class CodePlaygroundPlugin extends Plugin {
     // Inner work
 
     private setupServices() {
+        this._blockExtractorService = new BlockExtractorService();
         this._dataViewPluginService = new DataViewPluginService(this.app);
-        this._markdownGeneratorService = new MarkdownGeneratorService();
+        this._markdownGeneratorService = new MarkdownGeneratorService(this);
     }
 
     private setupCodePlaygroundProcessor() {
         this.registerMarkdownCodeBlockProcessor(
 			'code-playground',
-			(source, el, ctx) => {
-                const matches = source.matchAll(/BEGIN--(.*?)--(.*?)END--(.*?)--/gs);
+			async (source, el, ctx) => {
+                const codeFiles = this._blockExtractorService.extractCodeFilesFrom(source);
 
-                for (const match of matches) {
-                    const fileName = match[1];
-                    const code = match[2].trim();
-
-                    const codeFile = new CodeFile({
-                        code: code,
-                        fileName: fileName,
-                        language: CodeLanguage.TypeScript
-                    });
-                    
+                codeFiles.forEach(codeFile => {
                     this._markdownGeneratorService?.renderCodeBlockFor(codeFile, el);
-                }
+                });
+
+                console.log(await this._dataViewPluginService?.getTemplateValue(ctx.sourcePath));
             }
         );
     }

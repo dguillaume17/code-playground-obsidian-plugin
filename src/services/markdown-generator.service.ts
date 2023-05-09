@@ -22,8 +22,6 @@ export class MarkdownGeneratorService {
                             `${codeFile.code}\n` +
                             `${delimiter}\n`;
 
-        console.log(markdown);
-
         MarkdownRenderer.renderMarkdown(markdown, el, '', this._plugin);
 	}
 }
