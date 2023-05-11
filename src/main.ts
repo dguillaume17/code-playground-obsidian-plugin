@@ -1,4 +1,4 @@
-import { Plugin } from 'obsidian';
+import { Plugin, TFile } from 'obsidian';
 import { DataViewPluginService } from './services/data-view-plugin.service';
 import { MarkdownGeneratorService } from './services/markdown-generator.service';
 import { CodeFile } from './models/code-file.model';
@@ -42,7 +42,17 @@ export default class CodePlaygroundPlugin extends Plugin {
                     this._markdownGeneratorService?.renderCodeBlockFor(codeFile, el);
                 });
 
-                console.log(await this._dataViewPluginService?.getTemplateValue(ctx.sourcePath));
+                if (this._dataViewPluginService == null) {
+                    return;
+                }
+
+                const file = await this._dataViewPluginService.getCodePlaygroundTemplateFileValue(ctx.sourcePath);
+
+                if (file == null) {
+                    return;
+                }
+
+                console.log(await this.app.vault.read(file));
             }
         );
     }
