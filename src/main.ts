@@ -66,9 +66,13 @@ export default class CodePlaygroundPlugin extends Plugin {
                     ...sourceCodeFiles
                 ];
 
-                this._codeFilesRendererService
+                this._codeFilesRendererService.renderButton(el, sourceCodeFiles, computedCodeFiles);
 
-                this._codeFilesRendererService.render(el, sourceCodeFiles, computedCodeFiles);
+                const containerEl = this._htmlRendererService.createContainer(el);
+
+                this._codeFilesRendererService.setContainerEl(containerEl);
+
+                this._codeFilesRendererService.renderPreviewWithinContainer(sourceCodeFiles, computedCodeFiles);
             }
         );
     }

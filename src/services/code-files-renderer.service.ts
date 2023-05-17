@@ -4,6 +4,11 @@ import { MarkdownRendererService } from "./markdown-renderer.service";
 
 export class CodeFileRendererService {
 
+    // Inner properties
+
+    private _containerEl: HTMLElement;
+    private _codeFilesToRender: CodeFile[];
+
     // Lifecycle
 
     constructor(
@@ -13,32 +18,40 @@ export class CodeFileRendererService {
 
     // Interface
 
-    public render(
+    public setContainerEl(containerEl: HTMLElement) {
+        this._containerEl = containerEl;
+    }
+
+    public renderButton(
         parentEl: HTMLElement,
         sourceCodeFiles: CodeFile[],
         computedCodeFiles: CodeFile[]
     ) {
-        let containerEl: HTMLElement;
-        let codeFilesToRender = computedCodeFiles; // sourceCodeFiles
-
         this._htmlRendererService.renderButton(
             parentEl,
             'Switch preview mode',
             () => {
-                this._htmlRendererService.clearContainer(containerEl);
-
-                if (codeFilesToRender === computedCodeFiles) {
-                    codeFilesToRender = sourceCodeFiles;
-                } else {
-                    codeFilesToRender = computedCodeFiles;
-                }
-
-                codeFilesToRender.forEach(codeFile => {
-                    this._markdownRendererService.renderCodeBlockFor(codeFile, containerEl);
-                });
+                this.renderPreviewWithinContainer(
+                    sourceCodeFiles,
+                    computedCodeFiles
+                );
             });
-
-        containerEl = this._htmlRendererService.createContainer(parentEl);
     }
 
+    public renderPreviewWithinContainer(
+        sourceCodeFiles: CodeFile[],
+        computedCodeFiles: CodeFile[]
+    ) {
+        this._htmlRendererService.clearContainer(this._containerEl);
+
+        if (this._codeFilesToRender === sourceCodeFiles) {
+            this._codeFilesToRender = computedCodeFiles;
+        } else {
+            this._codeFilesToRender = sourceCodeFiles;
+        }
+
+        this._codeFilesToRender.forEach(codeFile => {
+            this._markdownRendererService.renderCodeBlockFor(codeFile, this._containerEl);
+        });
+    }
 }
