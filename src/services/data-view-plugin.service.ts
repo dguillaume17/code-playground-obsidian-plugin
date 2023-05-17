@@ -17,7 +17,7 @@ export class DataViewPluginService {
 
     // Interface
 
-    public async getCodePlaygroundTemplateFileValue(filePath: string): Promise<TFile | null> {
+    public async getCodePlaygroundTemplateFile(filePath: string): Promise<TFile | null> {
         const TEMPLATE_PROPERTY_NAME = 'code-playground-template';
         const file = await this.getFileFrom(filePath, TEMPLATE_PROPERTY_NAME);
 

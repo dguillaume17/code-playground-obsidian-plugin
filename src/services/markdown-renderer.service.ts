@@ -1,16 +1,13 @@
 import { MarkdownRenderer, Plugin } from "obsidian";
-import { CodeLanguage } from "src/enums/code-language.enum";
 import { CodeFile } from "src/models/code-file.model";
 
-export class MarkdownGeneratorService {
+export class MarkdownRendererService {
 
     // LIfecycle
 
     constructor(
         private _plugin: Plugin
-    ) {
-
-    }
+    ) {}
 
 
     // Interface

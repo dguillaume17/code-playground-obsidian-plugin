@@ -29,4 +29,10 @@ export class CodeFile implements CodeFileFields {
     constructor(fields: CodeFileFields) {
         Object.assign(this, fields);
     }
+
+    // Interface
+
+    public isEqualsTo(codeFile: CodeFile): boolean {
+        return this.fileName === codeFile.fileName;
+    }
 }

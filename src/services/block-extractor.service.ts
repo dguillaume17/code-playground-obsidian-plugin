@@ -23,4 +23,14 @@ export class BlockExtractorService {
         return codeFiles;
     }
 
+    public extractTemplateBlockSourceFrom(markdownFileContent: string): string {
+        const match = markdownFileContent.match(/\`\`\`code-playground(.*)\`\`\`/s);
+
+        if (match == null) {
+            return '';
+        }
+
+        return match[1];
+    }
+
 }

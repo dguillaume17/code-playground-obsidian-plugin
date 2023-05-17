@@ -1,16 +1,21 @@
-import { Plugin, TFile } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { DataViewPluginService } from './services/data-view-plugin.service';
-import { MarkdownGeneratorService } from './services/markdown-generator.service';
-import { CodeFile } from './models/code-file.model';
+import { MarkdownRendererService } from './services/markdown-renderer.service';;
 import { BlockExtractorService } from './services/block-extractor.service';
+import { FileService } from './services/file-reader.service';
+import { HtmlRendererService } from './services/html-renderer.service';
+import { CodeFileRendererService } from './services/code-files-renderer.service';
 
 export default class CodePlaygroundPlugin extends Plugin {
 
     // Inner properties
 
-    private _blockExtractorService: BlockExtractorService; 
-    private _dataViewPluginService: DataViewPluginService | undefined;
-    private _markdownGeneratorService: MarkdownGeneratorService | undefined;
+    private _blockExtractorService: BlockExtractorService;
+    private _codeFilesRendererService: CodeFileRendererService;
+    private _dataViewPluginService: DataViewPluginService;
+    private _fileReaderService: FileService;
+    private _htmlRendererService: HtmlRendererService;
+    private _markdownRendererService: MarkdownRendererService;
 	
     // Lifecycle
 
@@ -29,30 +34,41 @@ export default class CodePlaygroundPlugin extends Plugin {
     private setupServices() {
         this._blockExtractorService = new BlockExtractorService();
         this._dataViewPluginService = new DataViewPluginService(this.app);
-        this._markdownGeneratorService = new MarkdownGeneratorService(this);
+        this._fileReaderService = new FileService(this.app);
+        this._htmlRendererService = new HtmlRendererService();
+        this._markdownRendererService = new MarkdownRendererService(this);
+
+        this._codeFilesRendererService = new CodeFileRendererService(
+            this._htmlRendererService,
+            this._markdownRendererService
+        );
     }
 
     private setupCodePlaygroundProcessor() {
         this.registerMarkdownCodeBlockProcessor(
 			'code-playground',
 			async (source, el, ctx) => {
-                const codeFiles = this._blockExtractorService.extractCodeFilesFrom(source);
+                const sourceCodeFiles = this._blockExtractorService.extractCodeFilesFrom(source);
 
-                codeFiles.forEach(codeFile => {
-                    this._markdownGeneratorService?.renderCodeBlockFor(codeFile, el);
-                });
+                const codePlaygroundTemplateFile = await this._dataViewPluginService.getCodePlaygroundTemplateFile(ctx.sourcePath);
 
-                if (this._dataViewPluginService == null) {
+                if (codePlaygroundTemplateFile == null) {
                     return;
                 }
 
-                const file = await this._dataViewPluginService.getCodePlaygroundTemplateFileValue(ctx.sourcePath);
+                const codePlaygroundTemplateFileContent = await this._fileReaderService.readFile(codePlaygroundTemplateFile);
 
-                if (file == null) {
-                    return;
-                }
+                const templateBlockSource = this._blockExtractorService.extractTemplateBlockSourceFrom(codePlaygroundTemplateFileContent);
+                const templateCodeFiles = this._blockExtractorService.extractCodeFilesFrom(templateBlockSource);
+                
+                const computedCodeFiles = [
+                    ...templateCodeFiles.filter(templateCodeFile => !sourceCodeFiles.some(sourceCodeFile => sourceCodeFile.isEqualsTo(templateCodeFile))),
+                    ...sourceCodeFiles
+                ];
 
-                console.log(await this.app.vault.read(file));
+                this._codeFilesRendererService
+
+                this._codeFilesRendererService.render(el, sourceCodeFiles, computedCodeFiles);
             }
         );
     }
